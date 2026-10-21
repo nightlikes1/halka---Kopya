@@ -219,7 +219,11 @@ export class AuthController {
         this.onAuthSuccess(session, false);
       }, 600);
     } catch (err) {
-      this.showAlert(err.message || 'Kayıt başarısız.');
+      if (err.message && err.message.includes('onay linkine')) {
+        this.showAlert(err.message, 'info');
+      } else {
+        this.showAlert(err.message || 'Kayıt başarısız.', 'error');
+      }
     } finally {
       this.setLoading(submitBtn, false, '<span>Halka\'yı Başlat (Kayıt)</span> ✨');
     }

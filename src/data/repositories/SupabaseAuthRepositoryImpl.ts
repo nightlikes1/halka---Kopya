@@ -98,8 +98,14 @@ export class SupabaseAuthRepositoryImpl implements IAuthRepository {
         throw new Error(this.mapAuthError(error.message));
       }
 
+      // Supabase Email Enumeration Koruması:
+      // Kullanıcı zaten varsa error dönmez, identities dizisi boş [] döner
+      if (data.user?.identities && data.user.identities.length === 0) {
+        throw new Error('Bu e-posta adresiyle kayıtlı bir hesap zaten var. Lütfen giriş yapın.');
+      }
+
       if (!data.session && data.user) {
-        // Supabase e-posta onayı gerektiriyorsa
+        // Supabase yeni kayıt için e-posta onayı gerektiriyorsa
         throw new Error('Kayıt başarılı! Lütfen e-posta kutunuza gelen onay linkine tıklayın.');
       }
 
