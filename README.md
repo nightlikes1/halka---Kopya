@@ -42,10 +42,25 @@ Halkanın etrafındaki `+` butonu ile dilediğiniz eklentiyi ekleyebilir, isteme
 
 ## 🚀 Çalıştırma
 
-Projeyi yerel ortamınızda çalıştırmak için:
-
+### 1. Yerel Geliştirme (Node.js):
 ```bash
 npm run dev
 ```
-
 Ardından tarayıcınızdan **`http://localhost:3000`** adresine gidebilirsiniz.
+
+---
+
+### 2. 🐳 Docker ile Çalıştırma (Production Nginx):
+
+Projeyi Docker container'ı olarak tek komutla derleyip çalıştırmak için:
+
+```bash
+docker compose up -d --build
+```
+
+Container çalıştıktan sonra uygulamanıza **`http://localhost:3000`** adresinden erişebilirsiniz.
+
+Container'ı durdurmak için:
+```bash
+docker compose down
+```

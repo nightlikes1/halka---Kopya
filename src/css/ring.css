@@ -61,6 +61,58 @@
   animation-duration: 45s;
 }
 
+/* Expansion when in Ring Auth Mode (Login ekranı halka içinde!) */
+#central-ring-wrapper.ring-auth-mode {
+  width: var(--ring-auth-size, min(590px, 94vw, 84vh));
+  height: var(--ring-auth-size, min(590px, 94vw, 84vh));
+  max-width: 95vw;
+  max-height: 86vh;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  transform: none;
+  filter: drop-shadow(0 0 55px var(--ring-glow-core, rgba(56, 189, 248, 0.4)));
+  z-index: 45;
+}
+
+#central-ring-wrapper.ring-auth-mode #chain-ring-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  filter: drop-shadow(0 0 20px var(--ring-accent));
+}
+
+#central-ring-wrapper.ring-auth-mode #central-core-hub {
+  width: 82%;
+  height: 82%;
+  border-radius: 50%;
+  aspect-ratio: 1 / 1;
+  box-shadow: 
+    inset 0 0 50px rgba(0, 0, 0, 0.9),
+    0 0 50px -5px var(--ring-glow-core, rgba(56, 189, 248, 0.35)),
+    0 0 0 2px rgba(255, 255, 255, 0.15);
+  background: radial-gradient(circle at 50% 30%, rgba(18, 27, 48, 0.98) 0%, rgba(6, 9, 20, 0.99) 100%);
+  padding: clamp(16px, 3vh, 28px) clamp(16px, 3vw, 24px);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dim and blur wings when Auth Mode is active in the ring */
+.halka-main-canvas.auth-active .halka-wing {
+  opacity: 0.15;
+  filter: blur(8px);
+  pointer-events: none;
+  transition: all 0.45s ease;
+}
+
+.halka-main-canvas.auth-active #orbital-tethers {
+  opacity: 0.05;
+  transition: opacity 0.45s ease;
+}
+
 /* View Pane Management inside Core */
 .core-view-pane {
   display: none;
@@ -377,22 +429,18 @@
   flex-wrap: wrap;
 }
 
-.greeting-name-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border-glass);
+.greeting-name {
   color: var(--ring-accent);
-  border-radius: 12px;
-  padding: 1px 7px;
-  font-family: inherit;
-  font-size: clamp(12px, 2vw, 13.5px);
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition-smooth);
+  font-weight: 700;
+  font-size: clamp(13px, 2.2vw, 15px);
+  letter-spacing: -0.01em;
+  text-shadow: 0 0 12px var(--ring-glow-core);
+  user-select: text;
+  display: inline-block;
 }
 
-.greeting-name-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: var(--ring-accent);
+.greeting-name-btn {
+  display: none;
 }
 
 /* Dynamic Life OS Briefing Paragraph */

@@ -11,8 +11,10 @@
   <link rel="stylesheet" href="/src/css/ring.css">
   <link rel="stylesheet" href="/src/css/widgets.css">
   <link rel="stylesheet" href="/src/css/modal.css">
+  <link rel="stylesheet" href="/src/css/auth.css">
+  <link rel="stylesheet" href="/src/css/admin.css">
 </head>
-<body>
+<body class="auth-mode-active">
 
   <!-- Fullscreen SVG Dynamic Tether Canvas -->
   <svg id="orbital-tethers" xmlns="http://www.w3.org/2000/svg"></svg>
@@ -120,6 +122,138 @@
             </div>
             <div id="focused-widget-content" class="focused-widget-content">
               <!-- Focused widget view rendered here -->
+            </div>
+          </div>
+
+          <!-- 3. Central In-Ring Authentication View Pane (Login Ekranı Halka İçinde) -->
+          <div id="core-auth-view" class="core-view-pane">
+            <div class="ring-auth-container">
+              <!-- Top Emblem & Title -->
+              <div class="ring-auth-header">
+                <div class="ring-auth-emblem">⛓️</div>
+                <h2 class="ring-auth-title">Halka Hayat OS</h2>
+                <p class="ring-auth-sub">Halkanın içine adım atın</p>
+              </div>
+
+              <!-- Segmented Tabs -->
+              <div class="ring-auth-tabs" id="ring-auth-tabs">
+                <button class="ring-tab-btn active" data-tab="login" type="button">Giriş Yap</button>
+                <button class="ring-tab-btn" data-tab="register" type="button">Kayıt Ol</button>
+                <button class="ring-tab-btn" data-tab="admin" type="button">🛡️ Panel</button>
+              </div>
+
+              <!-- Alert Banner -->
+              <div class="ring-auth-alert" id="ring-auth-alert"></div>
+
+              <!-- Form Scrollable Viewport -->
+              <div class="ring-auth-forms-viewport">
+                <!-- 1. GİRİŞ FORMU -->
+                <form class="ring-auth-form-pane active" id="ring-form-login">
+                  <div class="ring-input-group">
+                    <span class="ring-input-icon">✉</span>
+                    <input type="email" class="ring-input" id="ring-login-email" required placeholder="E-Posta" autocomplete="email" value="kullanici@halka.os" />
+                  </div>
+
+                  <div class="ring-input-group">
+                    <span class="ring-input-icon">🔒</span>
+                    <input type="password" class="ring-input" id="ring-login-password" required placeholder="Şifre" autocomplete="current-password" value="123456" />
+                  </div>
+
+                  <button type="submit" class="btn-ring-auth-submit" id="btn-ring-submit-login">
+                    <span>Giriş Yap</span> →
+                  </button>
+
+                  <div class="ring-auth-actions-row">
+                    <button type="button" class="btn-ring-link" id="btn-ring-show-forgot">Şifremi Unuttum</button>
+                    <button type="button" class="btn-ring-quick-demo" id="btn-ring-quick-demo">⚡ Hızlı Demo</button>
+                  </div>
+                </form>
+
+                <!-- 2. KAYIT FORMU -->
+                <form class="ring-auth-form-pane" id="ring-form-register">
+                  <div class="ring-input-group">
+                    <span class="ring-input-icon">👤</span>
+                    <input type="text" class="ring-input" id="ring-register-name" required placeholder="Adınız / Hitap" autocomplete="name" />
+                  </div>
+
+                  <div class="ring-input-group">
+                    <span class="ring-input-icon">✉</span>
+                    <input type="email" class="ring-input" id="ring-register-email" required placeholder="E-Posta" autocomplete="email" />
+                  </div>
+
+                  <div class="ring-input-group">
+                    <span class="ring-input-icon">🔒</span>
+                    <input type="password" class="ring-input" id="ring-register-password" required minlength="6" placeholder="Şifre (min 6 karakter)" autocomplete="new-password" />
+                  </div>
+
+                  <button type="submit" class="btn-ring-auth-submit" id="btn-ring-submit-register">
+                    <span>Halka'yı Başlat (Kayıt)</span> ✨
+                  </button>
+                </form>
+
+                <!-- 3. ŞİFREMİ UNUTTUM -->
+                <form class="ring-auth-form-pane" id="ring-form-forgot">
+                  <div class="ring-input-group">
+                    <span class="ring-input-icon">✉</span>
+                    <input type="email" class="ring-input" id="ring-forgot-email" required placeholder="Kayıtlı E-Postanız" />
+                  </div>
+
+                  <button type="submit" class="btn-ring-auth-submit" id="btn-ring-submit-forgot">
+                    <span>Sıfırlama Bağlantısı Gönder</span> 📨
+                  </button>
+
+                  <button type="button" class="btn-ring-link" id="btn-ring-back-to-login" style="margin-top:6px; display:block; text-align:center;">
+                    ← Giriş Ekranına Dön
+                  </button>
+                </form>
+
+                <!-- 4. PANEL GİRİŞİ -->
+                <form class="ring-auth-form-pane" id="ring-form-admin">
+                  <div class="ring-input-group">
+                    <span class="ring-input-icon">🛡️</span>
+                    <input type="email" class="ring-input" id="ring-admin-email" required placeholder="Yönetici E-Posta" value="admin@halka.os" />
+                  </div>
+
+                  <div class="ring-input-group">
+                    <span class="ring-input-icon">🔑</span>
+                    <input type="password" class="ring-input" id="ring-admin-password" required placeholder="Yönetici Şifresi" value="admin2026" />
+                  </div>
+
+                  <button type="submit" class="btn-ring-auth-submit admin" id="btn-ring-submit-admin">
+                    <span>🛡️ Kontrol Paneline Gir</span> →
+                  </button>
+
+                  <button type="button" class="btn-ring-quick-demo" id="btn-ring-quick-admin" style="margin-top:4px;">
+                    ⚡ Tek Tıkla Panel Girişi
+                  </button>
+                </form>
+
+                <!-- 5. YENİ ŞİFRE BELİRLEME (Şifre Sıfırlama Onay Ekranı) -->
+                <form class="ring-auth-form-pane" id="ring-form-reset-password">
+                  <div style="text-align:center; margin-bottom:4px;">
+                    <span style="font-size:0.75rem; color:var(--ring-accent,#38bdf8); font-weight:600;">🔑 Yeni Şifrenizi Onaylayın</span>
+                  </div>
+
+                  <div class="ring-input-group">
+                    <span class="ring-input-icon">🔒</span>
+                    <input type="password" class="ring-input" id="ring-reset-new-password" required minlength="6" placeholder="Yeni Şifre (En az 6 karakter)" autocomplete="new-password" />
+                  </div>
+
+                  <div class="ring-input-group">
+                    <span class="ring-input-icon">🛡️</span>
+                    <input type="password" class="ring-input" id="ring-reset-confirm-password" required minlength="6" placeholder="Yeni Şifre Tekrar" autocomplete="new-password" />
+                  </div>
+
+                  <button type="submit" class="btn-ring-auth-submit" id="btn-ring-submit-reset-password">
+                    <span>Şifremi Güncelle ve Giriş Yap</span> ✨
+                  </button>
+
+                  <button type="button" class="btn-ring-link" id="btn-ring-cancel-reset" style="margin-top:6px; display:block; text-align:center;">
+                    ← Giriş Ekranına Dön
+                  </button>
+                </form>
+              </div>
+
             </div>
           </div>
         </div>

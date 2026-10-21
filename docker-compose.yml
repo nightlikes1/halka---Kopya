@@ -1,0 +1,14 @@
+services:
+  halka-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-https://zaoqiqenolmuwltqgjzq.supabase.co}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-sb_publishable_rKGZzSo0yShq_O1twxxgPw_a9Ae-_0g}
+    container_name: halka_life_os
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production

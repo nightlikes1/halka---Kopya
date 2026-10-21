@@ -5,6 +5,9 @@ import { sound } from './audio.js';
 import { ChainRingRenderer } from './ring.js';
 import { generateDailyBriefing } from './briefing.js';
 import { WidgetManager, WIDGET_CATALOG } from './widgets.js';
+import { container } from '../core/container';
+import { AuthController } from './auth.js';
+import { AdminPanelController } from './adminPanel.js';
 import {
   animateWidgetEntrance,
   animateWidgetExit,
@@ -22,38 +25,237 @@ class HalkaApp {
     this.widgetManager = null;
     this.orbitRadius = 380; // Distance from center to widget center on desktop
     this.focusedWidgetId = null;
+    this.currentUser = null;
+    this.authController = null;
+    this.adminPanelController = null;
     this.init();
   }
 
-  init() {
-    // 1. Initialize Ring Renderer
+  async init() {
+    // 1. Initialize Admin Panel Controller
+    this.adminPanelController = new AdminPanelController(
+      () => this.updateLayout(),
+      async () => container.logoutUseCase.execute()
+    );
+
+    // 2. Initialize Auth Controller (Direct Login popup on start if no session)
+    this.authController = new AuthController(async (session, openAdmin) => {
+      await this.handleAuthSuccess(session, openAdmin);
+    });
+
+    // 3. Initialize Ring Renderer
     const ringSvg = document.getElementById('chain-ring-svg');
     this.ringRenderer = new ChainRingRenderer(ringSvg, {
       radius: 200,
       center: { x: 250, y: 250 }
     });
 
-    // 2. Initialize Widget Manager
+    // 4. Initialize Widget Manager
     this.widgetManager = new WidgetManager(
       this.storage,
       this.sound,
       (change) => this.handleWidgetStateChange(change)
     );
 
-    // 3. Apply stored theme
+    // 5. Apply stored theme
     const profile = this.storage.getProfile();
     this.applyTheme(profile.theme || 'cyber-cyan');
     this.applyViewMode((profile.viewMode === 'grid') ? 'grid' : 'cockpit');
 
-    // 4. Render initial elements
-    this.renderCentralBriefing();
-    this.renderWidgets();
+    // 6. Setup listeners & clock
     this.setupEventListeners();
     this.startClockTicker();
 
-    // 5. Initial layout calculation & resize listener
+    // 7. Initial layout calculation & resize listener
     window.addEventListener('resize', () => this.updateLayout());
     setTimeout(() => this.updateLayout(), 150);
+
+    // Eğer URL'de şifre sıfırlama kurtarma linki varsa (type=recovery):
+    const isRecoveryUrl = window.location.hash.includes('type=recovery') || 
+                          new URLSearchParams(window.location.search).get('type') === 'recovery';
+
+    // Eğer önceden oturumu olan bir kullanıcı varsa ve şifre sıfırlama modunda DEĞİLSEK, eklentilerini 0 ms'de hemen çiz (5 saniyelik boş ekran beklemesini önle)
+    if (this.storage.currentUserId && !isRecoveryUrl) {
+      const storedName = this.storage.getInitialUserName() || profile.name;
+      this.currentUser = {
+        id: this.storage.currentUserId,
+        name: storedName,
+        email: ''
+      };
+      document.body.classList.remove('auth-mode-active');
+      this.renderHeaderUserStatus();
+      this.renderCentralBriefing();
+      this.renderWidgets();
+    }
+
+    // 8. Check Auth Session - if not logged in, IMMEDIATELY show login modal!
+    await this.checkAuthSession();
+  }
+
+  async checkAuthSession() {
+    const isRecoveryUrl = window.location.hash.includes('type=recovery') || 
+                          new URLSearchParams(window.location.search).get('type') === 'recovery';
+
+    if (isRecoveryUrl) {
+      document.body.classList.add('auth-mode-active');
+      this.renderHeaderUserStatus();
+      this.authController.show();
+      this.authController.switchTab('reset-password');
+    } else {
+      const session = await container.getSessionUseCase.execute();
+      if (session && session.user) {
+        await this.handleAuthSuccess(session, false);
+      } else {
+        this.currentUser = null;
+        this.storage.switchUserLocal(null);
+        document.body.classList.add('auth-mode-active');
+        this.renderHeaderUserStatus();
+        this.renderCentralBriefing();
+        this.renderWidgets();
+        // Uygulama açılır açılmaz doğrudan Login ekranını göster:
+        this.authController.show();
+      }
+    }
+
+    // Supabase auth state değişimlerini dinle
+    container.authRepo.onAuthStateChange(async (newSession, event) => {
+      // Şifre sıfırlama linki tıklandığında otomatik girişi engelle, yeni şifre onay ekranını aç:
+      if (event === 'PASSWORD_RECOVERY' || window.location.hash.includes('type=recovery')) {
+        document.body.classList.add('auth-mode-active');
+        this.renderHeaderUserStatus();
+        this.authController.show();
+        this.authController.switchTab('reset-password');
+        return;
+      }
+
+      if (newSession && newSession.user) {
+        if (!this.currentUser || this.currentUser.id !== newSession.user.id) {
+          await this.handleAuthSuccess(newSession, false);
+        }
+      } else {
+        this.currentUser = null;
+        this.storage.switchUserLocal(null);
+        document.body.classList.add('auth-mode-active');
+        this.renderHeaderUserStatus();
+        this.renderCentralBriefing();
+        this.renderWidgets();
+        this.authController.show();
+      }
+    });
+  }
+
+  async handleAuthSuccess(session, openAdmin = false) {
+    this.currentUser = session.user;
+    document.body.classList.remove('auth-mode-active');
+
+    // 1. Yerel verileri ANINDA yükle ve ekrana 0 milisaniyede bas (5 saniye boş ekran bekleme yok!)
+    this.storage.switchUserLocal(session.user.id, session.user.name);
+
+    const profile = this.storage.getProfile();
+    this.applyTheme(profile.theme || 'cyber-cyan');
+    this.applyViewMode((profile.viewMode === 'grid') ? 'grid' : 'cockpit');
+
+    this.renderHeaderUserStatus();
+    this.renderCentralBriefing();
+    this.renderWidgets();
+    this.updateLayout();
+
+    if (this.ringRenderer) {
+      this.ringRenderer.pulseChain();
+    }
+
+    // Eğer Panel Girişi ile girildiyse veya rol admin ise doğrudan Yönetim Panelini aç
+    if (openAdmin || (this.currentUser.role === 'admin' && openAdmin !== false)) {
+      this.adminPanelController.show();
+    }
+
+    // 2. Arka planda Supabase ile sessizce senkronize et (Arayüzü kilitlemez)
+    this.storage.syncRemote().then((hasChanges) => {
+      if (hasChanges) {
+        this.renderCentralBriefing();
+        this.renderWidgets();
+        this.updateLayout();
+      }
+    });
+  }
+
+  renderHeaderUserStatus() {
+    let containerEl = document.getElementById('header-user-slot');
+    if (!containerEl) {
+      const headerControls = document.querySelector('.header-controls');
+      if (headerControls) {
+        const slot = document.createElement('div');
+        slot.id = 'header-user-slot';
+        headerControls.prepend(slot);
+        containerEl = slot;
+      }
+    }
+
+    if (!containerEl) return;
+
+    if (this.currentUser) {
+      const isAdmin = this.currentUser.role === 'admin' || this.currentUser.email.includes('admin');
+      containerEl.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px;">
+          ${isAdmin ? `
+            <button class="btn-header-admin" id="btn-header-open-panel" title="Halka Sistem Kontrol Panelini Aç">
+              <span>🛡️</span> Kontrol Paneli
+            </button>
+          ` : ''}
+          <button class="btn-chip" id="btn-header-clean-reset" title="Halkayı Sıfırla (Tüm Eklentileri ve Verileri Temizle)" style="font-size:11px; padding:4px 8px; border-radius:6px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; cursor:pointer;">
+            <span>🧹</span> Sıfırla
+          </button>
+          <div class="header-user-status" title="${this.currentUser.email}">
+            <span class="header-user-name">👤 ${this.currentUser.name || this.currentUser.email.split('@')[0]}</span>
+            <button class="btn-logout" id="btn-auth-logout" title="Çıkış Yap">✕</button>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('btn-header-clean-reset')?.addEventListener('click', () => {
+        if (confirm('Halkayı tamamen sıfırlamak istiyor musunuz?\nTüm eklentiler kaldırılacak ve tertemiz bir başlangıç yapılacak.')) {
+          this.sound.playDelete();
+          this.storage.resetAll();
+          this.renderWidgets();
+          this.renderCentralBriefing();
+          if (this.ringRenderer) this.ringRenderer.pulseChain();
+        }
+      });
+
+      document.getElementById('btn-header-open-panel')?.addEventListener('click', () => {
+        this.sound.playClick();
+        this.adminPanelController.show();
+      });
+
+      document.getElementById('btn-auth-logout')?.addEventListener('click', async () => {
+        if (confirm('Halka oturumunuzu kapatmak istiyor musunuz?')) {
+          await container.logoutUseCase.execute();
+        }
+      });
+    } else {
+      containerEl.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="btn-header-login" id="btn-open-login-modal">
+            <span>Giriş Yap</span>
+          </button>
+          <button class="btn-header-admin" id="btn-open-panel-auth">
+            <span>🛡️ Panel Girişi</span>
+          </button>
+        </div>
+      `;
+
+      document.getElementById('btn-open-login-modal')?.addEventListener('click', () => {
+        this.sound.playClick();
+        this.authController.show();
+        this.authController.switchTab('login');
+      });
+
+      document.getElementById('btn-open-panel-auth')?.addEventListener('click', () => {
+        this.sound.playClick();
+        this.authController.show();
+        this.authController.switchTab('admin');
+      });
+    }
   }
 
   // --- THEME & VIEW MODE ---
@@ -95,8 +297,10 @@ class HalkaApp {
 
   // --- CENTRAL CORE & BRIEFING ---
   renderCentralBriefing() {
-    const briefing = generateDailyBriefing(this.storage);
     const profile = this.storage.getProfile();
+    // Oturum açan kullanıcının adı otomatik olarak kullanılır, seçilemez / düzenlenemez
+    const activeName = this.currentUser?.name || profile.name || 'Dostum';
+    const briefing = generateDailyBriefing(this.storage);
 
     const greetingEl = document.getElementById('core-greeting');
     const dateEl = document.getElementById('core-date');
@@ -105,17 +309,11 @@ class HalkaApp {
     const activeCountBadge = document.getElementById('core-active-count');
 
     if (greetingEl) {
+      const greetingPrefix = briefing.greeting.split(',')[0];
       greetingEl.innerHTML = `
-        <span class="greeting-prefix">${briefing.greeting.split(',')[0]},</span>
-        <button class="greeting-name-btn" id="btn-edit-name" title="İsmi Düzenle">
-          ${escapeHtml(profile.name || 'Dostum')} ✎
-        </button>
+        <span class="greeting-prefix">${greetingPrefix},</span>
+        <span class="greeting-name">${escapeHtml(activeName)}</span>
       `;
-      // Bind inline name edit
-      const editBtn = document.getElementById('btn-edit-name');
-      if (editBtn) {
-        editBtn.addEventListener('click', () => this.promptEditName());
-      }
     }
 
     if (dateEl) {
@@ -193,6 +391,13 @@ class HalkaApp {
     const existingBanner = centerStage ? centerStage.querySelector('.empty-orbit-banner') : null;
     if (existingBanner) existingBanner.remove();
 
+    // Giriş/Auth ekranındayken veya oturum açılmamışken asla banner veya eklenti çizilmez
+    const isAuthMode = document.body.classList.contains('auth-mode-active') || !this.currentUser;
+    if (isAuthMode) {
+      this.updateLayout();
+      return;
+    }
+
     if (activeIds.length === 0) {
       if (centerStage) {
         const emptyDiv = document.createElement('div');
@@ -269,7 +474,8 @@ class HalkaApp {
     const wingRight = document.getElementById('widgets-wing-right');
     if (!wingLeft || !wingRight) return;
 
-    if (isGrid || this.focusedWidgetId || window.innerWidth < 1024) {
+    const isAuthMode = document.getElementById('central-ring-wrapper')?.classList.contains('ring-auth-mode');
+    if (isGrid || this.focusedWidgetId || isAuthMode || window.innerWidth < 1024) {
       if (this.ringRenderer) {
         this.ringRenderer.updateTethers([]);
       }

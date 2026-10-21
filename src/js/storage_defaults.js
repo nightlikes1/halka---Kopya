@@ -7,10 +7,10 @@ export const DEFAULT_DATA = {
     soundEnabled: true,
     lastActiveDate: new Date().toISOString().split('T')[0]
   },
-  activeWidgetIds: ['water', 'pomodoro', 'tasks', 'streak'],
+  activeWidgetIds: [],
   widgetsData: {
     water: {
-      current: 1250,
+      current: 0,
       target: 2500,
       step: 250,
       history: []
@@ -22,49 +22,44 @@ export const DEFAULT_DATA = {
       workDuration: 25,
       shortBreakDuration: 5,
       longBreakDuration: 15,
-      completedSessions: 2
+      completedSessions: 0
     },
     tasks: {
-      items: [
-        { id: 't1', text: 'Halka sistemini kişiselleştir', done: true, priority: 'high' },
-        { id: 't2', text: 'Önemli projeye 45 dakika odaklan', done: false, priority: 'high' },
-        { id: 't3', text: 'Kitap oku ve not al (20 dk)', done: false, priority: 'normal' }
-      ]
+      items: []
     },
     streak: {
-      habitName: 'Günlük Odak & Gelişim',
-      currentStreak: 5,
-      bestStreak: 14,
-      lastCheckedDate: new Date().toISOString().split('T')[0],
-      history: [true, true, true, true, true, false, true]
+      habitName: 'Günlük Odak & Alışkanlık',
+      currentStreak: 0,
+      bestStreak: 0,
+      lastCheckedDate: '',
+      history: []
     },
     notes: {
-      content: '📌 Bugünün İlhamı: "Küçük adımların zinciri, büyük dönüşümlerin halkasıdır."\n- Odaklanmayı dağıtan bildirimleri kapat.\n- Akşam yürüyüşü yap.'
+      content: ''
     },
     breathing: {
-      cyclesCompleted: 3,
+      cyclesCompleted: 0,
       currentPhase: 'idle'
     },
     mood: {
-      todayMood: 'energetic',
-      energyLevel: 8,
-      reflection: 'Enerjim yerinde, zihnim berrak.'
+      todayMood: 'calm',
+      energyLevel: 5,
+      reflection: ''
     },
     ambient: {
       soundType: 'none',
       volume: 0.5
     },
     bigOne: {
-      goal: 'Önemli web arayüzünü tamamla',
+      goal: '',
       isCompleted: false,
-      category: 'Kariyer'
+      category: 'Odak'
     },
     budget: {
       limit: 500,
-      spent: 120,
-      items: [
-        { id: 'b1', name: 'Kahve & Atıştırmalık', amount: 120 }
-      ]
+      spent: 0,
+      items: []
     }
   }
 };
+
