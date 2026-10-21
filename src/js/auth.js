@@ -42,14 +42,6 @@ export class AuthController {
       });
     }
 
-    // 1. Hızlı Demo Girişi
-    const quickDemoBtn = document.getElementById('btn-ring-quick-demo');
-    if (quickDemoBtn) {
-      quickDemoBtn.addEventListener('click', async () => {
-        container.sound.playClick();
-        await this.handleQuickDemo();
-      });
-    }
 
     // 2. Hızlı Panel / Admin Girişi
     const quickAdminBtn = document.getElementById('btn-ring-quick-admin');
@@ -163,28 +155,6 @@ export class AuthController {
       this.showAlert(err.message || 'Giriş yapılamadı.');
     } finally {
       this.setLoading(submitBtn, false, '<span>Giriş Yap</span> →');
-    }
-  }
-
-  async handleQuickDemo() {
-    const submitBtn = document.getElementById('btn-ring-quick-demo');
-    try {
-      this.setLoading(submitBtn, true, 'Kokpit Hazırlanıyor...');
-      this.clearAlert();
-      const session = await container.loginUseCase.execute({
-        email: 'kullanici@halka.os',
-        password: 'demo-password-123',
-      });
-      this.showAlert('Demo oturumu açıldı! İyi çalışmalar...', 'success');
-      container.sound.playSuccess();
-      setTimeout(() => {
-        this.hide();
-        this.onAuthSuccess(session, false);
-      }, 400);
-    } catch (err) {
-      this.showAlert(err.message || 'Demo girişi açılamadı.');
-    } finally {
-      this.setLoading(submitBtn, false, '⚡ Hızlı Demo');
     }
   }
 
